@@ -1,7 +1,7 @@
 var socket;
 var playersList = {};
 function setup(){
-    createCanvas(500,500);
+    createCanvas(windowWidth,windowHeight);
     background(100);
     socket = io.connect('http://localhost:3000');
 
@@ -45,4 +45,11 @@ function move() {
 
 function setName(name){
     socket.emit('name', name);
+}
+
+function submitName(){
+  document.getElementById('defaultCanvas0').style.display = 'block';
+  document.getElementsByClassName('container')[0].style.display = 'none';
+  var name = document.getElementById('name').value;
+  socket.emit('createPlayer', name);
 }

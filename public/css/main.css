@@ -1,0 +1,24 @@
+body{
+    background-image: url("../img/backgroundImage.jpg");
+    background-repeat: no-repeat;
+   }
+.login{
+    border:5px solid white;
+    border-radius: 20px;
+    margin-top: 15%;
+    background-color: #271C40;
+    text-align: center;
+    padding: 15px;
+}
+h1{
+    text-align: center;
+    font-size: 7em;
+    font-weight: bold;
+    color: white;
+    text-shadow: 3px 3px black;
+    padding:50px;
+}
+#defaultCanvas0{
+  display: none;
+  z-index: 10;
+}

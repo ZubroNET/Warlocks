@@ -12,7 +12,6 @@ var io = require('socket.io')(server);
 
 
 io.sockets.on('connection', function (socket) {
-    players[socket.id] = new Player(200, 200, socket.id, getRandomColor());
     console.log("New player ID: '" + socket.id + "'");
 
     socket.on('disconnect', function () {
@@ -20,8 +19,8 @@ io.sockets.on('connection', function (socket) {
         delete players[socket.id];
     });
 
-    socket.on('name', function(name){
-      players[socket.id].name = name;
+    socket.on('createPlayer', function(name){
+      players[socket.id] = new Player(200, 200, socket.id, getRandomColor(), name);
     });
 
     socket.on('move', function (data) {
@@ -36,12 +35,12 @@ io.sockets.on('connection', function (socket) {
 }
 );
 
-function Player(x, y, id, col) {
+function Player(x, y, id, col, name) {
     this.x = x;
     this.y = y;
     this.id = id;
     this.col = col;
-    this.name;
+    this.name = name;
 }
 
 function getRandomColor() {
