@@ -12,14 +12,9 @@ function setup(){
 }
 
 function draw(){
-  background(50);
+  background(200,100,0);
   for(var id in playersList){
-    fill(color(playersList[id].col));
-    stroke(255);
-    ellipse(playersList[id].x, playersList[id].y, 30, 30);
-    fill(255);
-    noStroke();
-    if(playersList[id].name != null){text(playersList[id].name, playersList[id].x, playersList[id].y-20)};
+    showPlayer(playersList[id]);
   }
     move();
 }
@@ -52,4 +47,22 @@ function submitName(){
   document.getElementsByClassName('container')[0].style.display = 'none';
   var name = document.getElementById('name').value;
   socket.emit('createPlayer', name);
+}
+
+function showPlayer(player){
+  //body
+  fill(color(player.col));
+  stroke(255);
+  ellipse(player.x, player.y, player.r*2, player.r*2);
+
+  //name
+  fill(255);
+  noStroke();
+  text(player.name, player.x, player.y + 5);
+
+  //hp
+  fill(120);
+  rect(player.x - player.r, player.y + player.r + 5, player.r*2, 5);
+  fill(0,255,0);
+  rect(player.x - player.r, player.y + player.r + 5, map(player.hp, 0, 100, 0, player.r*2), 5);
 }

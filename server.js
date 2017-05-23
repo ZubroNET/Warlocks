@@ -1,4 +1,9 @@
 var players = {};
+var Land = {
+  d : 500
+};
+
+//server setup
 var express = require('express');
 var app = express();
 var server = app.listen(process.env.PORT || 3000, listen);
@@ -10,7 +15,7 @@ function listen() {
 app.use(express.static('public'));
 var io = require('socket.io')(server);
 
-
+//the rest 
 io.sockets.on('connection', function (socket) {
     console.log("New player ID: '" + socket.id + "'");
 
@@ -38,9 +43,11 @@ io.sockets.on('connection', function (socket) {
 function Player(x, y, id, col, name) {
     this.x = x;
     this.y = y;
+    this.r = 30;
     this.id = id;
     this.col = col;
     this.name = name;
+    this.hp = 100;
 }
 
 function getRandomColor() {
