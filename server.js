@@ -6,7 +6,7 @@ var Land = {
 //server setup
 var express = require('express');
 var app = express();
-var server = app.listen(process.env.PORT || 3000, listen);
+var server = app.listen(8080, listen);
 function listen() {
     var host = server.address().address;
     var port = server.address().port;
@@ -15,7 +15,7 @@ function listen() {
 app.use(express.static('public'));
 var io = require('socket.io')(server);
 
-//the rest 
+//the rest
 io.sockets.on('connection', function (socket) {
     console.log("New player ID: '" + socket.id + "'");
 
@@ -26,6 +26,8 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('createPlayer', function(name){
       players[socket.id] = new Player(200, 200, socket.id, getRandomColor(), name);
+      socket.emit('id',socket.id);
+      //io.clients[socket.id].send('test', socket.id);
     });
 
     socket.on('move', function (data) {
@@ -36,6 +38,10 @@ io.sockets.on('connection', function (socket) {
           if(data.left) players[socket.id].x += -3;
           io.sockets.emit('move', players);
         }
+    });
+
+    socket.on('angle', function(angle){
+      players[socket.id].angle = angle;
     });
 }
 );
@@ -48,6 +54,7 @@ function Player(x, y, id, col, name) {
     this.col = col;
     this.name = name;
     this.hp = 100;
+    this.angle;
 }
 
 function getRandomColor() {

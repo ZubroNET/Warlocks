@@ -1,12 +1,16 @@
 var socket;
 var playersList = {};
+var playerId;
 function setup(){
     createCanvas(windowWidth,windowHeight);
     background(100);
-    socket = io.connect('http://localhost:3000');
+    socket = io.connect('http://192.168.0.54:8080');
 
     socket.on('move', function(players) {
       playersList = players;
+    });
+    socket.on('id', function(id){
+      playerId = id;
     });
     textAlign(CENTER);
 }
@@ -16,7 +20,8 @@ function draw(){
   for(var id in playersList){
     showPlayer(playersList[id]);
   }
-    move();
+  move();
+  socket.send("hi");
 }
 
 function Player(){
@@ -38,6 +43,15 @@ function move() {
     socket.emit('move',data);
 }
 
+function mouseMoved(){
+  if(playersList[playerId] != null){
+    var dx = mouseX - playersList[playerId].x;
+    var dy = mouseY - playersList[playerId].y;
+    var angle = atan2(dy, dx);
+    socket.emit('angle', angle);
+  }
+}
+
 function setName(name){
     socket.emit('name', name);
 }
@@ -50,19 +64,48 @@ function submitName(){
 }
 
 function showPlayer(player){
+  push();
+
+  //ratation
+  translate(player.x, player.y);
+  rotate(player.angle);
+
+  //hands
+  push();
+  fill(color(player.col));
+  rotate(PI/2);
+  rotate(PI/4);
+  stroke(53,53,77);
+  strokeWeight(4);
+  ellipse(0, -player.r-5, 20, 20);
+  rotate(-PI/4*2);
+  ellipse(0, -player.r-5, 20, 20);
+  pop();
+
   //body
   fill(color(player.col));
-  stroke(255);
-  ellipse(player.x, player.y, player.r*2, player.r*2);
+  strokeWeight(4);
+  stroke(53,53,77);
+  ellipse(0, 0, player.r*2, player.r*2);
 
   //name
+  push();
+  rotate(-player.angle);
   fill(255);
-  noStroke();
-  text(player.name, player.x, player.y + 5);
+  stroke(53,53,77);
+  text(player.name, 0, 5);
+  pop();
 
   //hp
+  push();
+  rotate(-player.angle);
   fill(120);
-  rect(player.x - player.r, player.y + player.r + 5, player.r*2, 5);
+  strokeWeight(3);
+  stroke(53,53,77);
+  rect(-player.r, player.r + 5, player.r*2, 8);
   fill(0,255,0);
-  rect(player.x - player.r, player.y + player.r + 5, map(player.hp, 0, 100, 0, player.r*2), 5);
+  rect(-player.r, player.r + 5, map(player.hp, 0, 100, 0, player.r*2), 8);
+  pop();
+
+  pop();
 }
