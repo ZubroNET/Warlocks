@@ -1,6 +1,6 @@
 var players = {};
 var Land = {
-  d : 500
+  d : 1000
 };
 
 //server setup
@@ -27,6 +27,7 @@ io.sockets.on('connection', function (socket) {
     socket.on('createPlayer', function(name){
       players[socket.id] = new Player(200, 200, socket.id, getRandomColor(), name);
       socket.emit('id',socket.id);
+      socket.emit('land', Land);
       //io.clients[socket.id].send('test', socket.id);
     });
 
@@ -65,3 +66,8 @@ function getRandomColor() {
     }
     return color;
 }
+
+setInterval(function(){
+  Land.d--;
+  io.sockets.emit('land', Land);
+}, 300);

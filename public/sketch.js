@@ -1,5 +1,7 @@
 var socket;
+var anim = 0;
 var playersList = {};
+var Land = {};
 var playerId;
 function setup(){
     createCanvas(windowWidth,windowHeight);
@@ -12,16 +14,27 @@ function setup(){
     socket.on('id', function(id){
       playerId = id;
     });
+    socket.on('land', function(land){
+      Land = land;
+    });
     textAlign(CENTER);
 }
 
 function draw(){
   background(200,100,0);
+  stroke(53,53,77);
+  strokeWeight(8);
+  fill(100);
+  ellipse(width/2, height/2, Land.d, Land.d);
   for(var id in playersList){
     showPlayer(playersList[id]);
   }
   move();
-  socket.send("hi");
+
+  if(anim != 0){
+    if(anim > 10) anim*=-1;
+    anim++;
+  }
 }
 
 function Player(){
@@ -77,7 +90,7 @@ function showPlayer(player){
   rotate(PI/4);
   stroke(53,53,77);
   strokeWeight(4);
-  ellipse(0, -player.r-5, 20, 20);
+  ellipse(0, -player.r-5-abs(anim), 20, 20);
   rotate(-PI/4*2);
   ellipse(0, -player.r-5, 20, 20);
   pop();
@@ -108,4 +121,8 @@ function showPlayer(player){
   pop();
 
   pop();
+}
+
+function mousePressed(){
+  anim++;
 }
