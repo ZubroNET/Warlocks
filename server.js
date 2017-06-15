@@ -1,5 +1,7 @@
 var players = {};
 var Land = {
+  x : 0,
+  y : 0,
   d : 1000
 };
 
@@ -25,7 +27,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on('createPlayer', function(name){
-      players[socket.id] = new Player(200, 200, socket.id, getRandomColor(), name);
+      players[socket.id] = new Player(0, 0, socket.id, getRandomColor(), name);
       socket.emit('id',socket.id);
       socket.emit('land', Land);
       //io.clients[socket.id].send('test', socket.id);
@@ -43,6 +45,7 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('angle', function(angle){
       players[socket.id].angle = angle;
+      io.sockets.emit('move', players);
     });
 }
 );
@@ -68,6 +71,19 @@ function getRandomColor() {
 }
 
 setInterval(function(){
-  Land.d--;
+  if(Land.d >0){
+    Land.d--;
+  }
   io.sockets.emit('land', Land);
 }, 300);
+
+setInterval(function(){
+  for(var id in players){
+    var x = Math.abs(players[id].x);
+    var y = Math.abs(players[id].y);
+    var d = Math.sqrt(x*x + y*y);
+    if(d > Land.d/2-players[id].r+4 && players[id].hp > 0){
+      players[id].hp--;
+    }
+  }
+}, 17);

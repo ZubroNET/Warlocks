@@ -6,7 +6,7 @@ var playerId;
 function setup(){
     createCanvas(windowWidth,windowHeight);
     background(100);
-    socket = io.connect('http://192.168.0.54:8080');
+    socket = io.connect('http://localhost:8080');
 
     socket.on('move', function(players) {
       playersList = players;
@@ -18,6 +18,7 @@ function setup(){
       Land = land;
     });
     textAlign(CENTER);
+    translate(width/2, height/2);
 }
 
 function draw(){
@@ -25,7 +26,7 @@ function draw(){
   stroke(53,53,77);
   strokeWeight(8);
   fill(100);
-  ellipse(width/2, height/2, Land.d, Land.d);
+  ellipse(Land.x, Land.y, Land.d, Land.d);
   for(var id in playersList){
     showPlayer(playersList[id]);
   }
@@ -58,8 +59,8 @@ function move() {
 
 function mouseMoved(){
   if(playersList[playerId] != null){
-    var dx = mouseX - playersList[playerId].x;
-    var dy = mouseY - playersList[playerId].y;
+    var dx = mouseX - width/2 - playersList[playerId].x;
+    var dy = mouseY - height/2 - playersList[playerId].y;
     var angle = atan2(dy, dx);
     socket.emit('angle', angle);
   }
