@@ -21,6 +21,10 @@ function setup(){
     socket.on('bullets', function(data){
       bullets = data;
     });
+    socket.on('disconnect', function(){
+      alert('Server is down');
+      window.location.replace("http://google.com");
+    });
     textAlign(CENTER);
     translate(width/2, height/2);
 }

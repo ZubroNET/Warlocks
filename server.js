@@ -45,14 +45,18 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on('angle', function(angle){
-      players[socket.id].angle = angle;
-      io.sockets.emit('move', players);
+      if(players[socket.id] != null){
+        players[socket.id].angle = angle;
+        io.sockets.emit('move', players);
+      }
     });
 
     socket.on('shoot', function(data){
-      if(players[socket.id].overload == 100){
-        bullets.push(new Bullet(socket.id, data));
-        players[socket.id].overload = 0;
+      if(players[socket.id] != null){
+        if(players[socket.id].overload == 100){
+          bullets.push(new Bullet(socket.id, data));
+          players[socket.id].overload = 0;
+        }
       }
     });
 }
@@ -75,8 +79,6 @@ function Bullet(id, angle){
   this.y = players[id].y;
   this.angle = angle;
   this.speed = 5;
-  console.log(this.x);
-  console.log(this.y);
   this.update = function(){
     var dX = Math.cos(this.angle);
     var dY = Math.sin(this.angle);
