@@ -1,4 +1,5 @@
 var players = {};
+var bullets = [];
 var Land = {
   x : 0,
   y : 0,
@@ -47,6 +48,13 @@ io.sockets.on('connection', function (socket) {
       players[socket.id].angle = angle;
       io.sockets.emit('move', players);
     });
+
+    socket.on('shoot', function(data){
+      if(players[socket.id].overload == 100){
+        bullets.push(new Bullet(socket.id, data));
+        players[socket.id].overload = 0;
+      }
+    });
 }
 );
 
@@ -59,6 +67,23 @@ function Player(x, y, id, col, name) {
     this.name = name;
     this.hp = 100;
     this.angle;
+    this.overload = 100;
+}
+
+function Bullet(id, angle){
+  this.x = players[id].x;
+  this.y = players[id].y;
+  this.angle = angle;
+  this.speed = 5;
+  console.log(this.x);
+  console.log(this.y);
+  this.update = function(){
+    var dX = Math.cos(this.angle);
+    var dY = Math.sin(this.angle);
+    this.x = this.x + this.speed * dX;
+    this.y = this.y + this.speed * dY;
+  }
+
 }
 
 function getRandomColor() {
@@ -85,5 +110,12 @@ setInterval(function(){
     if(d > Land.d/2-players[id].r+4 && players[id].hp > 0){
       players[id].hp--;
     }
+    if(players[id].overload <100){
+      players[id].overload+=0.5;
+    }
   }
-}, 17);
+  for (var i = 0; i < bullets.length; i++) {
+    bullets[i].update();
+  }
+  io.sockets.emit('bullets', bullets);
+}, 100/25);

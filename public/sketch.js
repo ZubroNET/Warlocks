@@ -3,6 +3,7 @@ var anim = 0;
 var playersList = {};
 var Land = {};
 var playerId;
+var bullets = [];
 function setup(){
     createCanvas(windowWidth,windowHeight);
     background(100);
@@ -17,6 +18,9 @@ function setup(){
     socket.on('land', function(land){
       Land = land;
     });
+    socket.on('bullets', function(data){
+      bullets = data;
+    });
     textAlign(CENTER);
     translate(width/2, height/2);
 }
@@ -29,6 +33,9 @@ function draw(){
   ellipse(Land.x, Land.y, Land.d, Land.d);
   for(var id in playersList){
     showPlayer(playersList[id]);
+  }
+  for (var i = 0; i < bullets.length; i++) {
+    showBullet(bullets[i]);
   }
   move();
 
@@ -121,9 +128,29 @@ function showPlayer(player){
   rect(-player.r, player.r + 5, map(player.hp, 0, 100, 0, player.r*2), 8);
   pop();
 
+  //overload
+  push();
+  rotate(-player.angle);
+  fill(120);
+  strokeWeight(3);
+  stroke(53,53,77);
+  rect(-player.r, player.r + 13, player.r*2, 8);
+  fill(0,0,255);
+  rect(-player.r, player.r + 13, map(player.overload, 0, 100, 0, player.r*2), 8);
   pop();
+
+  pop();
+}
+
+function showBullet(bullet){
+  ellipse(bullet.x, bullet.y, 10, 10);
 }
 
 function mousePressed(){
   anim++;
+  console.log("MouseX: " + (mouseX-(width/2) - playersList[playerId].x));
+  console.log("MouseY: " + (mouseY-(height/2) - playersList[playerId].y));
+  var angle = atan2((mouseY)-(height/2) - playersList[playerId].y, mouseX-(width/2) - playersList[playerId].x  );
+  console.log(angle);
+  socket.emit('shoot',angle);
 }
