@@ -29,7 +29,6 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('createPlayer', function(name){
       players[socket.id] = new Player(0, 0, socket.id, getRandomColor(), name);
-      socket.emit('id',socket.id);
       socket.emit('land', Land);
       //io.clients[socket.id].send('test', socket.id);
     });
@@ -72,18 +71,52 @@ function Player(x, y, id, col, name) {
     this.hp = 100;
     this.angle;
     this.overload = 100;
+    this.strokeWeight = 4;
+
+    this.update = function(){
+      var x = Math.abs(this.x);
+      var y = Math.abs(this.y);
+      var d = Math.sqrt(x*x + y*y);
+      if(d > Land.d/2-this.r+4 && this.hp > 0){
+        this.hp--;
+      }
+      if(this.overload <100){
+        this.overload+=0.5;
+      }
+    }
 }
 
 function Bullet(id, angle){
   this.x = players[id].x;
   this.y = players[id].y;
+  this.r = 8;
   this.angle = angle;
   this.speed = 5;
+  this.playerId = id;
+  this.strokeWeight = 2;
+
   this.update = function(){
     var dX = Math.cos(this.angle);
     var dY = Math.sin(this.angle);
     this.x = this.x + this.speed * dX;
     this.y = this.y + this.speed * dY;
+  }
+
+  this.collides = function(){
+    for(var id in players)
+    if(this. playerId != id){
+      var a = Math.abs(this.x - players[id].x);
+      var b = Math.abs(this.y - players[id].y);
+      var d = Math.sqrt(a*a + b*b);
+      if(d < 30){
+        return true;
+      }else{
+        return false;
+      }
+    }
+    if(this.x > 2000 || this.x < -2000 || this.y > 2000 || this.y < -2000){
+      return true;
+    }
   }
 
 }
@@ -104,20 +137,16 @@ setInterval(function(){
   io.sockets.emit('land', Land);
 }, 300);
 
+//main loop
 setInterval(function(){
   for(var id in players){
-    var x = Math.abs(players[id].x);
-    var y = Math.abs(players[id].y);
-    var d = Math.sqrt(x*x + y*y);
-    if(d > Land.d/2-players[id].r+4 && players[id].hp > 0){
-      players[id].hp--;
-    }
-    if(players[id].overload <100){
-      players[id].overload+=0.5;
-    }
+    players[id].update();
   }
   for (var i = 0; i < bullets.length; i++) {
     bullets[i].update();
+    if(bullets[i].collides()){
+      bullets.splice(i);
+    }
   }
   io.sockets.emit('bullets', bullets);
 }, 100/25);

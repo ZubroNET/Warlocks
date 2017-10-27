@@ -1,19 +1,15 @@
 var socket;
 var anim = 0;
-var playersList = {};
+var players = {};
 var Land = {};
-var playerId;
 var bullets = [];
 function setup(){
     createCanvas(windowWidth,windowHeight);
     background(100);
     socket = io.connect('http://localhost:8080');
 
-    socket.on('move', function(players) {
-      playersList = players;
-    });
-    socket.on('id', function(id){
-      playerId = id;
+    socket.on('move', function(data) {
+      players = data;
     });
     socket.on('land', function(land){
       Land = land;
@@ -35,8 +31,8 @@ function draw(){
   strokeWeight(8);
   fill(100);
   ellipse(Land.x, Land.y, Land.d, Land.d);
-  for(var id in playersList){
-    showPlayer(playersList[id]);
+  for(var id in players){
+    showPlayer(players[id]);
   }
   for (var i = 0; i < bullets.length; i++) {
     showBullet(bullets[i]);
@@ -69,9 +65,9 @@ function move() {
 }
 
 function mouseMoved(){
-  if(playersList[playerId] != null){
-    var dx = mouseX - width/2 - playersList[playerId].x;
-    var dy = mouseY - height/2 - playersList[playerId].y;
+  if(players[socket.id] != null){
+    var dx = mouseX - width/2 - players[socket.id].x;
+    var dy = mouseY - height/2 - players[socket.id].y;
     var angle = atan2(dy, dx);
     socket.emit('angle', angle);
   }
@@ -109,7 +105,7 @@ function showPlayer(player){
 
   //body
   fill(color(player.col));
-  strokeWeight(4);
+  strokeWeight(player.strokeWeight);
   stroke(53,53,77);
   ellipse(0, 0, player.r*2, player.r*2);
 
@@ -147,14 +143,16 @@ function showPlayer(player){
 }
 
 function showBullet(bullet){
-  ellipse(bullet.x, bullet.y, 10, 10);
+  strokeWeight(bullet.strokeWeight);
+  fill(255);
+  ellipse(bullet.x, bullet.y, bullet.r*2, bullet.r*2);
 }
 
 function mousePressed(){
   anim++;
-  console.log("MouseX: " + (mouseX-(width/2) - playersList[playerId].x));
-  console.log("MouseY: " + (mouseY-(height/2) - playersList[playerId].y));
-  var angle = atan2((mouseY)-(height/2) - playersList[playerId].y, mouseX-(width/2) - playersList[playerId].x  );
+  console.log("MouseX: " + (mouseX-(width/2) - players[socket.id].x));
+  console.log("MouseY: " + (mouseY-(height/2) - players[socket.id].y));
+  var angle = atan2((mouseY)-(height/2) - players[socket.id].y, mouseX-(width/2) - players[socket.id].x  );
   console.log(angle);
   socket.emit('shoot',angle);
 }
