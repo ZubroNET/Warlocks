@@ -73,6 +73,9 @@ function Player(x, y, id, col, name) {
     this.overload = 100;
     this.strokeWeight = 4;
 
+    this.hit = 0;
+    this.bulletAngle;
+
     this.update = function(){
       var x = Math.abs(this.x);
       var y = Math.abs(this.y);
@@ -83,6 +86,17 @@ function Player(x, y, id, col, name) {
       if(this.overload <100){
         this.overload+=0.5;
       }
+      if(this.hit){
+        this.onHit();
+      }
+    }
+
+    this.onHit = function(){
+      var dX = Math.cos(this.bulletAngle);
+      var dY = Math.sin(this.bulletAngle);
+      this.x = this.x + 5 * dX;
+      this.y = this.y + 5 * dY;
+      this.hit--;
     }
 }
 
@@ -108,7 +122,10 @@ function Bullet(id, angle){
       var a = Math.abs(this.x - players[id].x);
       var b = Math.abs(this.y - players[id].y);
       var d = Math.sqrt(a*a + b*b);
-      if(d < 30){
+      if(d < players[id].r + players[id].strokeWeight + this.strokeWeight){
+        console.log("nigga");
+        players[id].hit = 40;
+        players[id].bulletAngle = this.angle;
         return true;
       }else{
         return false;
