@@ -4,7 +4,8 @@ var players = {};
 var Land = {};
 var bullets = [];
 function setup(){
-    createCanvas(windowWidth,windowHeight);
+    var canvas = createCanvas(windowWidth,windowHeight);
+    //canvas.parent('container');
     background(100);
     socket = io.connect('http://localhost:8080');
 
@@ -20,6 +21,10 @@ function setup(){
     socket.on('disconnect', function(){
       alert('Server is down');
       window.location.replace("http://google.com");
+    });
+    socket.on('death', function(){
+      document.body.style.backgroundColor = "rgb(0,0,0)";
+      console.log("kok");
     });
     textAlign(CENTER);
     translate(width/2, height/2);

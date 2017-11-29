@@ -35,10 +35,10 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('move', function (data) {
         if (players[socket.id] != null) {
-          if(data.up) players[socket.id].y += -3;
-          if(data.down) players[socket.id].y += 3;
-          if(data.right) players[socket.id].x += 3;
-          if(data.left) players[socket.id].x += -3;
+          if(data.up) players[socket.id].y += -players[socket.id].speed;
+          if(data.down) players[socket.id].y += players[socket.id].speed;
+          if(data.right) players[socket.id].x += players[socket.id].speed;
+          if(data.left) players[socket.id].x += -players[socket.id].speed;
           io.sockets.emit('move', players);
         }
     });
@@ -72,6 +72,7 @@ function Player(x, y, id, col, name) {
     this.angle;
     this.overload = 100;
     this.strokeWeight = 4;
+    this.speed = 5;
 
     this.hit = 0;
     this.bulletAngle;
@@ -84,10 +85,17 @@ function Player(x, y, id, col, name) {
         this.hp--;
       }
       if(this.overload <100){
-        this.overload+=0.5;
+        this.overload+=2;
       }
       if(this.hit){
         this.onHit();
+      }
+      if(this.hp == 0){
+        io.sockets.emit('death');
+        this.x = 0;
+        this.y = 0;
+        this.hp = 100;
+        this.overload = 100;
       }
     }
 
@@ -105,7 +113,7 @@ function Bullet(id, angle){
   this.y = players[id].y;
   this.r = 8;
   this.angle = angle;
-  this.speed = 5;
+  this.speed = 15;
   this.playerId = id;
   this.strokeWeight = 2;
 
@@ -166,4 +174,4 @@ setInterval(function(){
     }
   }
   io.sockets.emit('bullets', bullets);
-}, 100/25);
+}, 1000/30);
