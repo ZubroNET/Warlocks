@@ -35,18 +35,18 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('move', function (data) {
         if (players[socket.id] != null) {
-          if(data.up) players[socket.id].y += -players[socket.id].speed;
-          if(data.down) players[socket.id].y += players[socket.id].speed;
-          if(data.right) players[socket.id].x += players[socket.id].speed;
-          if(data.left) players[socket.id].x += -players[socket.id].speed;
-          io.sockets.emit('move', players);
+          if(data.up) players[socket.id].y += -3;
+          if(data.down) players[socket.id].y += 3;
+          if(data.right) players[socket.id].x += 3;
+          if(data.left) players[socket.id].x += -3;
+          //io.sockets.emit('move', players);
         }
     });
 
     socket.on('angle', function(angle){
       if(players[socket.id] != null){
         players[socket.id].angle = angle;
-        io.sockets.emit('move', players);
+        //io.sockets.emit('move', players);
       }
     });
 
@@ -72,7 +72,7 @@ function Player(x, y, id, col, name) {
     this.angle;
     this.overload = 100;
     this.strokeWeight = 4;
-    this.speed = 5;
+    this.alive = true;
 
     this.hit = 0;
     this.bulletAngle;
@@ -85,17 +85,13 @@ function Player(x, y, id, col, name) {
         this.hp--;
       }
       if(this.overload <100){
-        this.overload+=2;
+        this.overload+=0.5;
       }
       if(this.hit){
         this.onHit();
       }
       if(this.hp == 0){
-        io.sockets.emit('death');
-        this.x = 0;
-        this.y = 0;
-        this.hp = 100;
-        this.overload = 100;
+        this.alive = false;
       }
     }
 
@@ -131,7 +127,6 @@ function Bullet(id, angle){
       var b = Math.abs(this.y - players[id].y);
       var d = Math.sqrt(a*a + b*b);
       if(d < players[id].r + players[id].strokeWeight + this.strokeWeight){
-        console.log("nigga");
         players[id].hit = 40;
         players[id].bulletAngle = this.angle;
         return true;
@@ -155,15 +150,13 @@ function getRandomColor() {
     return color;
 }
 
-setInterval(function(){
-  if(Land.d >0){
-    Land.d--;
-  }
-  io.sockets.emit('land', Land);
-}, 300);
-
 //main loop
 setInterval(function(){
+  if(Land.d >0){
+    Land.d-=0.1;
+  }
+  io.sockets.emit('land', Land);
+
   for(var id in players){
     players[id].update();
   }
@@ -174,4 +167,5 @@ setInterval(function(){
     }
   }
   io.sockets.emit('bullets', bullets);
-}, 1000/30);
+  io.sockets.emit('players', players);
+}, 1000/50);

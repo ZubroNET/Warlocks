@@ -3,10 +3,15 @@ var anim = 0;
 var players = {};
 var Land = {};
 var bullets = [];
+var img;
 function setup(){
-    var canvas = createCanvas(windowWidth,windowHeight);
-    //canvas.parent('container');
-    background(100);
+    createCanvas(windowWidth,windowHeight);
+    img = loadImage('img/lava.jpg');
+    for (var i = 0; i < width/128; i++) {
+      for (var j = 0; j < height/128; j++) {
+        image(img, i*128, j*128);
+      }
+    }
     socket = io.connect('http://localhost:8080');
 
     socket.on('move', function(data) {
@@ -18,20 +23,23 @@ function setup(){
     socket.on('bullets', function(data){
       bullets = data;
     });
+    socket.on('players', function(data){
+      players = data;
+    });
     socket.on('disconnect', function(){
       alert('Server is down');
       window.location.replace("http://google.com");
-    });
-    socket.on('death', function(){
-      document.body.style.backgroundColor = "rgb(0,0,0)";
-      console.log("kok");
     });
     textAlign(CENTER);
     translate(width/2, height/2);
 }
 
 function draw(){
-  background(200,100,0);
+  for (var i = -width/2; i < width/2; i+=128) {
+    for (var j = -height/2; j < height/2; j+=128) {
+      image(img, i, j);
+    }
+  }
   stroke(53,53,77);
   strokeWeight(8);
   fill(100);
@@ -47,6 +55,15 @@ function draw(){
   if(anim != 0){
     if(anim > 10) anim*=-1;
     anim++;
+  }
+  if(players[socket.id] != null){
+    if(!players[socket.id].alive){
+      fill(255);
+      textStyle(BOLD);
+      textSize(200);
+      textAlign(CENTER)
+      text("WASTED", 0, 0);
+    }
   }
 }
 
@@ -90,6 +107,8 @@ function submitName(){
 }
 
 function showPlayer(player){
+  if(!player.alive)
+    return;
   push();
 
   //ratation
