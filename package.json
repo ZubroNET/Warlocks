@@ -9,7 +9,7 @@
   "author": "Daniel Shiffman",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.15.3",
+    "express": "^4.16.2",
     "socket.io": "^1.7.4"
   }
 }
