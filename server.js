@@ -1,3 +1,4 @@
+var fps = 0;
 var players = {};
 var bullets = {};
 var Land = {
@@ -37,19 +38,19 @@ io.sockets.on('connection', function(socket) {
     console.log("new player papi");
     players[socket.id] = new Player(0, 0, socket.id, getRandomColor(), name);
     var playerInfo = {
-        id : socket.id,
-        col: players[socket.id].col,
-        name : players[socket.id].name
+      id: socket.id,
+      col: players[socket.id].col,
+      name: players[socket.id].name
     }
     io.sockets.emit('newPlayer', playerInfo);
   });
 
   socket.on('move', function(data) {
-    if (players[socket.id] != null) {
-      if (data.up) players[socket.id].y += -3;
-      if (data.down) players[socket.id].y += 3;
-      if (data.right) players[socket.id].x += 3;
-      if (data.left) players[socket.id].x += -3;
+    if (players[socket.id] != null && players[socket.id].alive == 1) {
+      if (data.up) players[socket.id].y -= players[socket.id].speed;
+      if (data.down) players[socket.id].y += players[socket.id].speed;
+      if (data.right) players[socket.id].x += players[socket.id].speed;
+      if (data.left) players[socket.id].x -= players[socket.id].speed;
       //io.sockets.emit('move', players);
     }
   });
@@ -62,11 +63,19 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('shoot', function(data) {
-    if (players[socket.id] != null) {
+    if (players[socket.id] != null && players[socket.id].alive == 1) {
       if (players[socket.id].overload == 100) {
         //bullets.push(new Bullet(socket.id, data));
         bullets[socket.id] = new Bullet(players[socket.id].angle, socket.id);
         players[socket.id].overload = 0;
+
+
+        var bulletInfo = {
+          x: bullets[socket.id].x,
+          y: bullets[socket.id].y,
+          id: socket.id
+        };
+        io.sockets.emit('newBullet', bulletInfo);
       }
     }
   });
@@ -80,10 +89,11 @@ function Player(x, y, id, col, name) {
   this.col = col;
   this.name = name;
   this.hp = 100;
-  this.angle;
+  this.angle = 0;
   this.overload = 100;
   this.strokeWeight = 4;
-  this.alive = true;
+  this.alive = 1;
+  this.speed = 5;
 
   this.hit = 0;
   this.bulletAngle;
@@ -92,7 +102,7 @@ function Player(x, y, id, col, name) {
     var x = Math.abs(this.x);
     var y = Math.abs(this.y);
     var d = Math.sqrt(x * x + y * y);
-    if (d > Land.d / 2 - this.r + 4 && this.hp > 0) {
+    if (d > (Land.d / 2) - this.r + 4 && this.hp > 0) {
       this.hp--;
     }
     if (this.overload < 100) {
@@ -102,7 +112,10 @@ function Player(x, y, id, col, name) {
       this.onHit();
     }
     if (this.hp == 0) {
-      this.alive = false;
+      this.alive = 5;
+      this.x = 0;
+      this.y = 0;
+      this.hp = 100;
     }
   }
 
@@ -133,7 +146,7 @@ function Bullet(angle, id) {
 
   this.collides = function() {
     for (var id in players)
-      if (this.playerId != id) {
+      if (this.playerId != id && players[id].alive == 1) {
         var a = Math.abs(this.x - players[id].x);
         var b = Math.abs(this.y - players[id].y);
         var d = Math.sqrt(a * a + b * b);
@@ -163,10 +176,23 @@ function getRandomColor() {
 
 //main loop
 setInterval(function() {
-  if (Land.d > 0) {
-    Land.d -= 0.1;
+  if (fps == 29) {
+    fps = 0;
+    for (var id in players) {
+      if (players[id].alive != 1) {
+        players[id].alive--;
+      }
+    }
+  } else {
+    fps++;
   }
-  io.sockets.emit('land', Land);
+  if (Land.d > 0) {
+    if (Land.d < 400) {
+      Land.d == 1000;
+    } else {
+      Land.d -= 0.05;
+    }
+  }
 
   for (var id in players) {
     players[id].update();
@@ -174,19 +200,42 @@ setInterval(function() {
   for (var id in bullets) {
     bullets[id].update();
     if (bullets[id].collides()) {
+      io.sockets.emit("deleteBullet", id);
       delete bullets[id];
     }
   }
-  io.sockets.emit('bullets', bullets);
-  //io.sockets.emit('players', players);
-  var o = {};
+  sendData();
+
+}, 1000 / 30);
+
+function sendData() {
+  var data = {};
+  var p = {};
+  var b = {};
   for (var id in players) {
-    o[id] = {
+    p[id] = {
       x: players[id].x,
       y: players[id].y,
-      angle: players[id].angle
-    }
+      angle: players[id].angle,
+      overload: players[id].overload,
+      hp: players[id].hp,
+      alive: players[id].alive
+    };
   }
-  io.sockets.emit('players', o);
+  for (var id in bullets) {
+    b[id] = {
+      x: bullets[id].x,
+      y: bullets[id].y
+    };
+  }
+  if (fps == 0) {
+    var l = {
+      d: Land.d
+    };
+    data["land"] = l;
+  }
 
-}, 1000 / 15);
+  data["players"] = p;
+  data["bullets"] = b;
+  io.sockets.emit('players', data);
+}
