@@ -20,15 +20,18 @@ function setup() {
   // socket.on('move', function(data) {
   //   players = data;
   // });
-  socket.on('land', function(land) {
-    Land = land;
-  });
+  // socket.on('land', function(land) {
+  //   Land = land;
+  // });
   socket.on('newPlayer', function(playerInfo) {
     players[playerInfo.id] = new Player(0, 0, playerInfo.id, playerInfo.col, playerInfo.name);
   });
-  socket.on('bullets', function(data) {
-    bullets = data;
+  socket.on('playerDisconnect', function(id){
+    delete players[id];
   });
+  // socket.on('bullets', function(data) {
+  //   bullets = data;
+  // });
   socket.on('data', function(data) {
     players = data['players'];
     bullets = data['bullets'];
@@ -48,6 +51,7 @@ function setup() {
       players[id].overload = data.players[id].overload;
       players[id].hp = data.players[id].hp;
       players[id].alive = data.players[id].alive;
+      players[id].deaths = data.players[id].deaths;
     }
     for (var id in data.bullets) {
       bullets[id].x = data.bullets[id].x;
@@ -84,15 +88,6 @@ function draw() {
   }
   // move();
 
-  if (players[socket.id] != null) {
-    if (!players[socket.id].alive) {
-      fill(255);
-      textStyle(BOLD);
-      textSize(200);
-      textAlign(CENTER)
-      text("WASTED", 0, 0);
-    }
-  }
 }
 
 function Player() {
@@ -100,40 +95,33 @@ function Player() {
   this.y;
 }
 
-// function move() {
-//   var data = {
-//     up: false,
-//     down: false,
-//     right: false,
-//     left: false
-//   };
-//   if (keyIsDown(87)) data.up = true;
-//   if (keyIsDown(83)) data.down = true;
-//   if (keyIsDown(68)) data.right = true;
-//   if (keyIsDown(65)) data.left = true;
-//   socket.emit('move', data);
-// }
-
-// function mouseMoved() {
-//   if (players[socket.id] != null) {
-//     var dx = mouseX - width / 2 - players[socket.id].x;
-//     var dy = mouseY - height / 2 - players[socket.id].y;
-//     var angle = radians(atan2(dy, dx));
-//     socket.emit('angle', angle);
-//     //console.log(degrees(angle));
-//   }
-// }
-
 function setName(name) {
   socket.emit('name', name);
 }
 
 function submitName() {
-  document.getElementById('defaultCanvas0').style.display = 'block';
-  document.getElementsByClassName('container')[0].style.display = 'none';
   var name = document.getElementById('name').value;
-  socket.emit('createPlayer', name);
+  if(name.length > 2 && name.length < 15){
+      document.getElementById('defaultCanvas0').style.display = 'block';
+      document.getElementsByClassName('container')[0].style.display = 'none';
+      socket.emit('createPlayer', name);
+  }else{
+    alert("Minimum 3 characters, maximum 14 characters");
+  }
 }
+
+function keyPressed(){
+  if(keyCode === ENTER)
+        submitName  ();
+}
+
+function stopRKey(evt) {
+  var evt = (evt) ? evt : ((event) ? event : null);
+  var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+  if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+}
+
+document.onkeypress = stopRKey;
 
 function showPlayer(player) {
   var color;
@@ -238,7 +226,7 @@ function showBullet(bullet) {
 }
 
 function mousePressed() {
-  if (players[socket.id] != null) {
+  if (players[socket.id] != null && players[socket.id].overload == 100) {
     var angle = atan2((mouseY) - (height / 2) - players[socket.id].y, mouseX - (width / 2) - players[socket.id].x);
     socket.emit('shoot', angle);
   }
@@ -260,7 +248,8 @@ function Player(x, y, id, col, name) {
   this.p_angle = 1;
   this.overload = 100;
   this.strokeWeight = 4;
-  this.alive = true;
+  this.alive = 1;
+  this.deaths = 0;
 }
 
 function Bullet(x, y) {
@@ -322,14 +311,23 @@ function Land() {
 function drawScoreboard() {
   push();
   noStroke();
-
   fill(50, 200);
-  rect(width / 32 * 7, -height / 32 * 15, width / 4, height / 4, 20);
-  translate(width / 32 * 7, -height / 32 * 15);
+  rect(width / 32 * 11, -height / 32 * 15, width / 8, height / 4, 20);
+  translate(width / 32 * 11, -height / 32 * 15+10);
+  var count = 1;
+  textAlign(LEFT);
+  fill(255);
+  strokeWeight(2);
+  stroke(53, 53, 77);
+  textSize(16);
+  text('NAME',20, count * 20);
+  text('DEATHS',120, count * 20);
+  count++;
+  stroke(53, 53, 77);
   for(var id in players){
-    fill(255);
-    text(players[id].name,5,5);
-    console.log("kok");
+    text(players[id].name,20, count * 20);
+    text(players[id].deaths,120, count * 20);
+    count++;
   }
   pop();
 }

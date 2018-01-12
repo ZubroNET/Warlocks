@@ -32,6 +32,7 @@ io.sockets.on('connection', function(socket) {
   socket.on('disconnect', function() {
     console.log("Client has disconnected");
     delete players[socket.id];
+    io.sockets.emit('playerDisconnect',socket.id);
   });
 
   socket.on('createPlayer', function(name) {
@@ -93,6 +94,7 @@ function Player(x, y, id, col, name) {
   this.overload = 100;
   this.strokeWeight = 4;
   this.alive = 1;
+  this.deaths = 0;
   this.speed = 5;
 
   this.hit = 0;
@@ -116,6 +118,7 @@ function Player(x, y, id, col, name) {
       this.x = 0;
       this.y = 0;
       this.hp = 100;
+      this.deaths++;
     }
   }
 
@@ -219,7 +222,8 @@ function sendData() {
       angle: players[id].angle,
       overload: players[id].overload,
       hp: players[id].hp,
-      alive: players[id].alive
+      alive: players[id].alive,
+      deaths: players[id].deaths
     };
   }
   for (var id in bullets) {
