@@ -3,7 +3,7 @@ var players = {};
 var land;
 var bullets = {};
 var img;
-var inter = false;
+var inter = true;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -17,16 +17,10 @@ function setup() {
   land = new Land();
   socket = io.connect('http://localhost:8080');
 
-  // socket.on('move', function(data) {
-  //   players = data;
-  // });
-  // socket.on('land', function(land) {
-  //   Land = land;
-  // });
   socket.on('newPlayer', function(playerInfo) {
     players[playerInfo.id] = new Player(0, 0, playerInfo.id, playerInfo.col, playerInfo.name);
   });
-  socket.on('playerDisconnect', function(id){
+  socket.on('playerDisconnect', function(id) {
     delete players[id];
   });
   // socket.on('bullets', function(data) {
@@ -45,21 +39,35 @@ function setup() {
   });
   socket.on('players', function(data) {
     for (var id in data.players) {
-      players[id].x = data.players[id].x;
-      players[id].y = data.players[id].y;
-      players[id].angle = degrees(data.players[id].angle);
-      players[id].overload = data.players[id].overload;
-      players[id].hp = data.players[id].hp;
-      players[id].alive = data.players[id].alive;
-      players[id].deaths = data.players[id].deaths;
+      players[id].px = players[id].x;
+      players[id].py = players[id].y;
+      if (players[id].hasOwnProperty('x'))
+        players[id].x = data.players[id].x;
+      if (players[id].hasOwnProperty('y'))
+        players[id].y = data.players[id].y;
+
+      players[id].p_angle = players[id].angle;
+      if (players[id].hasOwnProperty('angle'))
+        players[id].angle = degrees(data.players[id].angle);
+      if (players[id].hasOwnProperty('overload'))
+        players[id].overload = data.players[id].overload;
+      if (players[id].hasOwnProperty('hp'))
+        players[id].hp = data.players[id].hp;
+      if (players[id].hasOwnProperty('alive'))
+        players[id].alive = data.players[id].alive;
+      if (players[id].hasOwnProperty('deaths'))
+        players[id].deaths = data.players[id].deaths;
     }
     for (var id in data.bullets) {
-      bullets[id].x = data.bullets[id].x;
-      bullets[id].y = data.bullets[id].y;
+      bullets[id].px = bullets[id].x;
+      bullets[id].py = bullets[id].y;
+      if (bullets[id].hasOwnProperty('x'))
+        bullets[id].x = data.bullets[id].x;
+      if (bullets[id].hasOwnProperty('y'))
+        bullets[id].y = data.bullets[id].y;
     }
-    if (data.land != null) {
+    if (data.hasOwnProperty('land'))
       land.d = data.land.d;
-    }
   });
   socket.on('disconnect', function() {
     //alert('Server is down');
@@ -86,13 +94,7 @@ function draw() {
   for (var id in bullets) {
     showBullet(bullets[id]);
   }
-  // move();
 
-}
-
-function Player() {
-  this.x;
-  this.y;
 }
 
 function setName(name) {
@@ -101,24 +103,32 @@ function setName(name) {
 
 function submitName() {
   var name = document.getElementById('name').value;
-  if(name.length > 2 && name.length < 15){
-      document.getElementById('defaultCanvas0').style.display = 'block';
-      document.getElementsByClassName('container')[0].style.display = 'none';
-      socket.emit('createPlayer', name);
-  }else{
+  if (name.length > 2 && name.length < 15) {
+    document.getElementById('defaultCanvas0').style.display = 'block';
+    document.getElementsByClassName('container')[0].style.display = 'none';
+    socket.emit('createPlayer', name);
+  } else {
     alert("Minimum 3 characters, maximum 14 characters");
   }
 }
 
-function keyPressed(){
-  if(keyCode === ENTER)
-        submitName  ();
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  translate(0, 0);
+  translate(width / 2, height / 2);
+}
+
+function keyPressed() {
+  if (keyCode === ENTER)
+    submitName();
 }
 
 function stopRKey(evt) {
   var evt = (evt) ? evt : ((event) ? event : null);
   var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
-  if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+  if ((evt.keyCode == 13) && (node.type == "text")) {
+    return false;
+  }
 }
 
 document.onkeypress = stopRKey;
@@ -129,15 +139,17 @@ function showPlayer(player) {
   //   color = player.col;
   // } else {
   //   color = color(150, 100);
-  // }
-  player.px = lerp(player.px, player.x, 0.2);
-  player.py = lerp(player.py, player.y, 0.2);
-  player.p_angle = lerpAngle(player.p_angle, player.angle, 0.2);
+  //sdsd }
 
   if (inter) {
+    player.px = lerp(player.px, player.x, 0.9);
+    player.py = lerp(player.py, player.y, 0.9);
+    player.p_angle = lerpAngle(player.p_angle, player.angle, 0.9);
     var x = player.px;
     var y = player.py;
     var angle = player.p_angle;
+    // console.log(" x" + player.x);
+    // console.log("px" + player.px);
   } else {
     var x = player.x;
     var y = player.y;
@@ -285,7 +297,9 @@ setInterval(function() {
     var dx = mouseX - width / 2 - players[socket.id].x;
     var dy = mouseY - height / 2 - players[socket.id].y;
     var angle = radians(atan2(dy, dx));
-    socket.emit('angle', angle);
+    if (angle != players[socket.id].angle) {
+      socket.emit('angle', angle);
+    }
     //console.log(degrees(angle));
   }
 
@@ -299,7 +313,9 @@ setInterval(function() {
   if (keyIsDown(83)) data.down = true;
   if (keyIsDown(68)) data.right = true;
   if (keyIsDown(65)) data.left = true;
-  socket.emit('move', data);
+  if (data.up || data.down || data.right || data.left) {
+    socket.emit('move', data);
+  }
 }, 1000 / 30);
 
 function Land() {
@@ -311,22 +327,28 @@ function Land() {
 function drawScoreboard() {
   push();
   noStroke();
+  // stroke(53, 53, 77);
+  // strokeWeight(8);
   fill(50, 200);
-  rect(width / 32 * 11, -height / 32 * 15, width / 8, height / 4, 20);
-  translate(width / 32 * 11, -height / 32 * 15+10);
+  translate(width / 2 - 200 - 10, -height / 2 + 10);
+  rect(0, 0, 200, 200, 10);
   var count = 1;
   textAlign(LEFT);
   fill(255);
   strokeWeight(2);
   stroke(53, 53, 77);
   textSize(16);
-  text('NAME',20, count * 20);
-  text('DEATHS',120, count * 20);
+  text('NAME', 20, 28);
+  text('DEATHS', 115, 28);
+  strokeWeight(2);
+  stroke(255);
+  line(20, 38, 180, 38)
   count++;
   stroke(53, 53, 77);
-  for(var id in players){
-    text(players[id].name,20, count * 20);
-    text(players[id].deaths,120, count * 20);
+  for (var id in players) {
+    text(players[id].name, 20, count * 20 + 16);
+    textAlign('CENTER');
+    text(players[id].deaths, 142, count * 20 + 16);
     count++;
   }
   pop();

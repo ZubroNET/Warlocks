@@ -37,7 +37,7 @@ io.sockets.on('connection', function(socket) {
 
   socket.on('createPlayer', function(name) {
     console.log("new player papi");
-    players[socket.id] = new Player(0, 0, socket.id, getRandomColor(), name);
+    players[socket.id] = new Player(socket.id, name);
     var playerInfo = {
       id: socket.id,
       col: players[socket.id].col,
@@ -82,12 +82,12 @@ io.sockets.on('connection', function(socket) {
   });
 });
 
-function Player(x, y, id, col, name) {
-  this.x = x;
-  this.y = y;
+function Player(id, name) {
+  this.x = 0;
+  this.y = 0;
   this.r = 30;
   this.id = id;
-  this.col = col;
+  this.col = getRandomColor();
   this.name = name;
   this.hp = 100;
   this.angle = 0;
@@ -100,34 +100,33 @@ function Player(x, y, id, col, name) {
   this.hit = 0;
   this.bulletAngle;
 
-  this.update = function() {
-    var x = Math.abs(this.x);
-    var y = Math.abs(this.y);
-    var d = Math.sqrt(x * x + y * y);
-    if (d > (Land.d / 2) - this.r + 4 && this.hp > 0) {
-      this.hp--;
-    }
-    if (this.overload < 100) {
-      this.overload += 0.5;
-    }
-    if (this.hit) {
-      this.onHit();
-    }
-    if (this.hp == 0) {
-      this.alive = 5;
-      this.x = 0;
-      this.y = 0;
-      this.hp = 100;
-      this.deaths++;
-    }
-  }
+}
 
-  this.onHit = function() {
-    var dX = Math.cos(this.bulletAngle);
-    var dY = Math.sin(this.bulletAngle);
-    this.x = this.x + 5 * dX;
-    this.y = this.y + 5 * dY;
-    this.hit--;
+Player.prototype.onHit = function() {
+  var dX = Math.cos(this.bulletAngle);
+  var dY = Math.sin(this.bulletAngle);
+  this.x = this.x + 5 * dX;
+  this.y = this.y + 5 * dY;
+  this.hit--;
+}
+
+Player.prototype.update = function() {
+  var d = Math.sqrt(Math.abs(Math.pow(this.x,2)) + Math.abs(Math.pow(this.y,2)));
+  if (d > (Land.d / 2) - this.r + 4 && this.hp > 0) {
+    this.hp--;
+  }
+  if (this.overload < 100) {
+    this.overload += 0.5;
+  }
+  if (this.hit) {
+    this.onHit();
+  }
+  if (this.hp == 0) {
+    this.alive = 5;
+    this.x = 0;
+    this.y = 0;
+    this.hp = 100;
+    this.deaths++;
   }
 }
 
