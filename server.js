@@ -150,22 +150,24 @@ function Bullet(angle, id) {
 
 }
 Bullet.prototype.collides = function() {
-  for (var id in players)
+  for (var id in players) {
     if (this.playerId != id && players[id].alive == 1) {
       var a = Math.abs(this.x - players[id].x);
       var b = Math.abs(this.y - players[id].y);
       var d = Math.sqrt(a * a + b * b);
+
       if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
         players[id].hit = 40;
         players[id].bulletAngle = this.angle;
         return true;
-      } else {
-        return false;
       }
     }
-  if (this.x > 2000 || this.x < -2000 || this.y > 2000 || this.y < -2000) {
-    return true;
   }
+
+  if (this.x > 2000 || this.x < -2000 || this.y > 2000 || this.y < -2000)
+    return true;
+  else
+    return false;
 }
 
 Bullet.prototype.update = function() {
