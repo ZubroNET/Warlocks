@@ -1,11 +1,7 @@
 var fps = 0;
 var players = {};
 var bullets = {};
-var Land = {
-  x: 0,
-  y: 0,
-  d: 1000
-};
+var land = new Land();
 
 //server setup
 var express = require('express');
@@ -26,13 +22,13 @@ io.sockets.on('connection', function(socket) {
   var data = {};
   data['players'] = players;
   data['bullets'] = bullets;
-  data['land'] = Land;
+  data['land'] = land;
   socket.emit('data', data);
 
   socket.on('disconnect', function() {
     console.log("Client has disconnected");
     delete players[socket.id];
-    io.sockets.emit('playerDisconnect',socket.id);
+    io.sockets.emit('playerDisconnect', socket.id);
   });
 
   socket.on('createPlayer', function(name) {
@@ -54,14 +50,16 @@ io.sockets.on('connection', function(socket) {
       if (data.left) players[socket.id].x -= players[socket.id].speed;
       //io.sockets.emit('move', players);
     }
+    if (data.hasOwnProperty('angle') && players[socket.id] != null)
+      players[socket.id].angle = data.angle;
   });
 
-  socket.on('angle', function(angle) {
-    if (players[socket.id] != null) {
-      players[socket.id].angle = angle;
-      //io.sockets.emit('move', players);
-    }
-  });
+  // socket.on('angle', function(angle) {
+  //   if (players[socket.id] != null) {
+  //     players[socket.id].angle = angle;
+  //     //io.sockets.emit('move', players);
+  //   }
+  // });
 
   socket.on('shoot', function(data) {
     if (players[socket.id] != null && players[socket.id].alive == 1) {
@@ -82,6 +80,17 @@ io.sockets.on('connection', function(socket) {
   });
 });
 
+function Land() {
+  this.d = 800;
+}
+
+Land.prototype.update = function() {
+  if (this.d > 400)
+    this.d -= 0.5;
+  else
+    this.d = 800;
+}
+
 function Player(id, name) {
   this.x = 0;
   this.y = 0;
@@ -93,9 +102,9 @@ function Player(id, name) {
   this.angle = 0;
   this.overload = 100;
   this.strokeWeight = 4;
-  this.alive = 1;
+  this.alive = 5;
   this.deaths = 0;
-  this.speed = 5;
+  this.speed = 6;
 
   this.hit = 0;
   this.bulletAngle;
@@ -105,14 +114,14 @@ function Player(id, name) {
 Player.prototype.onHit = function() {
   var dX = Math.cos(this.bulletAngle);
   var dY = Math.sin(this.bulletAngle);
-  this.x = this.x + 5 * dX;
-  this.y = this.y + 5 * dY;
+  this.x = this.x + 7 * dX;
+  this.y = this.y + 7 * dY;
   this.hit--;
 }
 
 Player.prototype.update = function() {
-  var d = Math.sqrt(Math.abs(Math.pow(this.x,2)) + Math.abs(Math.pow(this.y,2)));
-  if (d > (Land.d / 2) - this.r + 4 && this.hp > 0) {
+  var d = Math.sqrt(Math.abs(Math.pow(this.x, 2)) + Math.abs(Math.pow(this.y, 2)));
+  if (d > (land.d / 2) - this.r + 4 && this.hp > 0) {
     this.hp--;
   }
   if (this.overload < 100) {
@@ -139,32 +148,31 @@ function Bullet(angle, id) {
   this.strokeWeight = 2;
   this.playerId = id;
 
-  this.update = function() {
-    var dX = Math.cos(this.angle);
-    var dY = Math.sin(this.angle);
-    this.x = this.x + this.speed * dX;
-    this.y = this.y + this.speed * dY;
-  }
-
-  this.collides = function() {
-    for (var id in players)
-      if (this.playerId != id && players[id].alive == 1) {
-        var a = Math.abs(this.x - players[id].x);
-        var b = Math.abs(this.y - players[id].y);
-        var d = Math.sqrt(a * a + b * b);
-        if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
-          players[id].hit = 40;
-          players[id].bulletAngle = this.angle;
-          return true;
-        } else {
-          return false;
-        }
+}
+Bullet.prototype.collides = function() {
+  for (var id in players)
+    if (this.playerId != id && players[id].alive == 1) {
+      var a = Math.abs(this.x - players[id].x);
+      var b = Math.abs(this.y - players[id].y);
+      var d = Math.sqrt(a * a + b * b);
+      if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
+        players[id].hit = 40;
+        players[id].bulletAngle = this.angle;
+        return true;
+      } else {
+        return false;
       }
-    if (this.x > 2000 || this.x < -2000 || this.y > 2000 || this.y < -2000) {
-      return true;
     }
+  if (this.x > 2000 || this.x < -2000 || this.y > 2000 || this.y < -2000) {
+    return true;
   }
+}
 
+Bullet.prototype.update = function() {
+  var dX = Math.cos(this.angle);
+  var dY = Math.sin(this.angle);
+  this.x = this.x + this.speed * dX;
+  this.y = this.y + this.speed * dY;
 }
 
 function getRandomColor() {
@@ -178,7 +186,7 @@ function getRandomColor() {
 
 //main loop
 setInterval(function() {
-  if (fps == 29) {
+  if (fps == 30) {
     fps = 0;
     for (var id in players) {
       if (players[id].alive != 1) {
@@ -187,13 +195,6 @@ setInterval(function() {
     }
   } else {
     fps++;
-  }
-  if (Land.d > 0) {
-    if (Land.d < 400) {
-      Land.d == 1000;
-    } else {
-      Land.d -= 0.05;
-    }
   }
 
   for (var id in players) {
@@ -207,7 +208,7 @@ setInterval(function() {
     }
   }
   sendData();
-
+  land.update();
 }, 1000 / 30);
 
 function sendData() {
@@ -233,7 +234,7 @@ function sendData() {
   }
   if (fps == 0) {
     var l = {
-      d: Land.d
+      d: land.d
     };
     data["land"] = l;
   }

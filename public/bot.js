@@ -6,6 +6,8 @@ var bullets = {};
 var img;
 var inter = true;
 var interval;
+var bot;
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   angleMode(DEGREES);
@@ -67,7 +69,7 @@ function setup() {
       if (bullets[id].hasOwnProperty('y'))
         bullets[id].y = data.bullets[id].y;
     }
-    if (data.hasOwnProperty('land')){
+    if (data.hasOwnProperty('land')) {
       land.pd = land.d;
       land.d = data.land.d;
     }
@@ -87,7 +89,7 @@ function Land() {
   this.pd = 1000;
 }
 
-Land.prototype.render = function(){
+Land.prototype.render = function() {
   stroke(53, 53, 77);
   strokeWeight(8);
   fill(100);
@@ -121,10 +123,13 @@ function submitName() {
     document.getElementById('defaultCanvas0').style.display = 'block';
     document.getElementsByClassName('container')[0].style.display = 'none';
     socket.emit('createPlayer', name);
-    setInterval(function(){mainLoop()}, 1000 / 30);
+    setInterval(function() {
+      mainLoop()
+    }, 1000 / 30);
   } else {
     alert("Minimum 3 characters, maximum 14 characters");
   }
+  bot = new Bot;
 }
 
 
@@ -316,18 +321,8 @@ function mainLoop() {
     right: false,
     left: false
   };
-
-  if (players[socket.id] != null) {
-    var dx = mouseX - width / 2 - players[socket.id].x;
-    var dy = mouseY - height / 2 - players[socket.id].y;
-    var angle = radians(atan2(dy, dx));
-    if (angle != players[socket.id].angle) {
-      //socket.emit('angle', angle);
-      data.angle = angle;
-    }
-    //console.log(degrees(angle));
-  }
-  console.log(data);
+  bot.findTarget();
+  bot.update();
   if (keyIsDown(87)) data.up = true;
   if (keyIsDown(83)) data.down = true;
   if (keyIsDown(68)) data.right = true;
@@ -335,36 +330,8 @@ function mainLoop() {
   if (data.up || data.down || data.right || data.left || data.hasOwnProperty('angle')) {
     socket.emit('move', data);
   }
-  land.d -=0.5;
+  land.d -= 0.5;
 }
-// setInterval(function() {
-//   if (players[socket.id] != null) {
-//     var dx = mouseX - width / 2 - players[socket.id].x;
-//     var dy = mouseY - height / 2 - players[socket.id].y;
-//     var angle = radians(atan2(dy, dx));
-//     if (angle != players[socket.id].angle) {
-//       socket.emit('angle', angle);
-//     }
-//     //console.log(degrees(angle));
-//   }
-//
-//   var data = {
-//     up: false,
-//     down: false,
-//     right: false,
-//     left: false
-//   };
-//   if (keyIsDown(87)) data.up = true;
-//   if (keyIsDown(83)) data.down = true;
-//   if (keyIsDown(68)) data.right = true;
-//   if (keyIsDown(65)) data.left = true;
-//   if (data.up || data.down || data.right || data.left) {
-//     socket.emit('move', data);
-//   }
-//   //console.log(frameRate());
-// }, 1000 / 30);
-
-
 
 function drawScoreboard() {
   push();
@@ -395,3 +362,55 @@ function drawScoreboard() {
   }
   pop();
 }
+
+function Bot() {
+  this.id = socket.id;
+  this.target = null;
+  this.targetDistance = null;
+}
+
+Bot.prototype.findTarget = function() {
+  this.target = null;
+  this.targetDistance = null;
+  for (var id in players) {
+    if (id != this.id) {
+      if (this.target == null) {
+        this.target = id;
+        this.targetDistance = dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y);
+      } else if (dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y) < this.targetDistance) {
+        this.target = id;
+        this.targetDistance = dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y);
+      }
+    }
+  }
+}
+
+Bot.prototype.update = function() {
+    if (players[this.id] != null) {
+      var data = {
+        up: false,
+        down: false,
+        right: false,
+        left: false
+      };
+      if(floor(random(0,2)))
+        data.up = true;
+      else
+        data.down = true;
+      if(floor(random(0,2)))
+        data.right = true;
+      else
+        data.left = true;
+
+      if (this.target != null) {
+        var dx = players[this.target].x - players[this.id].x;
+        var dy = players[this.target].y - players[this.id].y;
+        data.angle = radians(atan2(dy, dx));
+      } else {
+        data.angle = random(-PI, PI);
+      }
+      socket.emit('move', data);
+      if (players[this.id].overload == 100)
+        socket.emit('shoot');
+    }
+  }
