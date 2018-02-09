@@ -32,23 +32,26 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('createPlayer', function(name) {
-    console.log("new player papi");
-    players[socket.id] = new Player(socket.id, name);
-    var playerInfo = {
-      id: socket.id,
-      col: players[socket.id].col,
-      name: players[socket.id].name
+    if(!players.hasOwnProperty(socket.id)){
+      console.log("new player papi");
+      players[socket.id] = new Player(socket.id, name);
+      var playerInfo = {
+        id: socket.id,
+        col: players[socket.id].col,
+        name: players[socket.id].name
+      }
+      io.sockets.emit('newPlayer', playerInfo);
     }
-    io.sockets.emit('newPlayer', playerInfo);
   });
 
   socket.on('move', function(data) {
-    if (players[socket.id] != null && players[socket.id].alive == 1) {
+    if (players[socket.id] != null && players[socket.id].alive == 1 && players[socket.id].movable && players[socket.id].hit == 0) {
       if (data.up) players[socket.id].y -= players[socket.id].speed;
       if (data.down) players[socket.id].y += players[socket.id].speed;
       if (data.right) players[socket.id].x += players[socket.id].speed;
       if (data.left) players[socket.id].x -= players[socket.id].speed;
       //io.sockets.emit('move', players);
+      players[socket.id].movable = false;
     }
     if (data.hasOwnProperty('angle') && players[socket.id] != null)
       players[socket.id].angle = data.angle;
@@ -105,6 +108,7 @@ function Player(id, name) {
   this.alive = 5;
   this.deaths = 0;
   this.speed = 6;
+  this.movable = false;
 
   this.hit = 0;
   this.bulletAngle;
@@ -125,7 +129,7 @@ Player.prototype.update = function() {
     this.hp--;
   }
   if (this.overload < 100) {
-    this.overload += 0.5;
+    this.overload += 1;
   }
   if (this.hit) {
     this.onHit();
@@ -136,7 +140,9 @@ Player.prototype.update = function() {
     this.y = 0;
     this.hp = 100;
     this.deaths++;
+    this.hit = 0;
   }
+  this.movable = true;
 }
 
 function Bullet(angle, id) {
@@ -159,6 +165,7 @@ Bullet.prototype.collides = function() {
       if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
         players[id].hit = 40;
         players[id].bulletAngle = this.angle;
+        players[id].hp -=20;
         return true;
       }
     }
@@ -213,6 +220,7 @@ setInterval(function() {
   land.update();
 }, 1000 / 30);
 
+//data sending
 function sendData() {
   var data = {};
   var p = {};

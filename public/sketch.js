@@ -327,7 +327,6 @@ function mainLoop() {
     }
     //console.log(degrees(angle));
   }
-  console.log(data);
   if (keyIsDown(87)) data.up = true;
   if (keyIsDown(83)) data.down = true;
   if (keyIsDown(68)) data.right = true;
