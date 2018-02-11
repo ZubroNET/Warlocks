@@ -134,7 +134,7 @@ Player.prototype.update = function() {
   if (this.hit) {
     this.onHit();
   }
-  if (this.hp == 0) {
+  if (this.hp <= 0) {
     this.alive = 5;
     this.x = 0;
     this.y = 0;

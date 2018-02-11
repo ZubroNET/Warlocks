@@ -6,6 +6,9 @@ var bullets = {};
 var img;
 var inter = true;
 var interval;
+var bot;
+var botActive = false;
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   angleMode(DEGREES);
@@ -67,7 +70,7 @@ function setup() {
       if (bullets[id].hasOwnProperty('y'))
         bullets[id].y = data.bullets[id].y;
     }
-    if (data.hasOwnProperty('land')){
+    if (data.hasOwnProperty('land')) {
       land.pd = land.d;
       land.d = data.land.d;
     }
@@ -87,7 +90,7 @@ function Land() {
   this.pd = 1000;
 }
 
-Land.prototype.render = function(){
+Land.prototype.render = function() {
   stroke(53, 53, 77);
   strokeWeight(8);
   fill(100);
@@ -121,10 +124,13 @@ function submitName() {
     document.getElementById('defaultCanvas0').style.display = 'block';
     document.getElementsByClassName('container')[0].style.display = 'none';
     socket.emit('createPlayer', name);
-    setInterval(function(){mainLoop()}, 1000 / 30);
+    setInterval(function() {
+      mainLoop()
+    }, 1000 / 30);
   } else {
     alert("Minimum 3 characters, maximum 14 characters");
   }
+  bot = new Bot;
 }
 
 
@@ -229,7 +235,7 @@ function showPlayer(player) {
   strokeWeight(3);
   stroke(53, 53, 77);
   rect(-player.r, player.r + 13, player.r * 2, 8);
-  fill(0, 0, 255);
+  fill(0, 200, 255);
   rect(-player.r, player.r + 13, map(player.overload, 0, 100, 0, player.r * 2), 8);
   pop();
 
@@ -310,31 +316,35 @@ function lerpAngle(start, stop, amt) {
 }
 
 function mainLoop() {
-  var data = {
-    up: false,
-    down: false,
-    right: false,
-    left: false
-  };
+  if (!botActive) {
+    var data = {
+      up: false,
+      down: false,
+      right: false,
+      left: false
+    };
 
-  if (players[socket.id] != null) {
-    var dx = mouseX - width / 2 - players[socket.id].x;
-    var dy = mouseY - height / 2 - players[socket.id].y;
-    var angle = radians(atan2(dy, dx));
-    if (angle != players[socket.id].angle) {
-      //socket.emit('angle', angle);
-      data.angle = angle;
+    if (players[socket.id] != null) {
+      var dx = mouseX - width / 2 - players[socket.id].x;
+      var dy = mouseY - height / 2 - players[socket.id].y;
+      var angle = radians(atan2(dy, dx));
+      if (angle != players[socket.id].angle) {
+        //socket.emit('angle', angle);
+        data.angle = angle;
+      }
+      //console.log(degrees(angle));
     }
-    //console.log(degrees(angle));
+    if (keyIsDown(87)) data.up = true;
+    if (keyIsDown(83)) data.down = true;
+    if (keyIsDown(68)) data.right = true;
+    if (keyIsDown(65)) data.left = true;
+    if (data.up || data.down || data.right || data.left || data.hasOwnProperty('angle')) {
+      socket.emit('move', data);
+    }
+  } else {
+    bot.update();
   }
-  if (keyIsDown(87)) data.up = true;
-  if (keyIsDown(83)) data.down = true;
-  if (keyIsDown(68)) data.right = true;
-  if (keyIsDown(65)) data.left = true;
-  if (data.up || data.down || data.right || data.left || data.hasOwnProperty('angle')) {
-    socket.emit('move', data);
-  }
-  land.d -=0.5;
+  land.d -= 0.5;
 }
 // setInterval(function() {
 //   if (players[socket.id] != null) {
@@ -393,4 +403,114 @@ function drawScoreboard() {
     count++;
   }
   pop();
+}
+
+function Bot() {
+  this.id = socket.id;
+  this.target = null;
+  this.targetDistance = null;
+  this.dir = null;
+  this.dirTime = 0;
+}
+
+Bot.prototype.findTarget = function() {
+  this.target = null;
+  this.targetDistance = null;
+  for (var id in players) {
+    if (id != this.id) {
+      if (this.target == null) {
+        this.target = id;
+        this.targetDistance = dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y);
+      } else if (dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y) < this.targetDistance) {
+        this.target = id;
+        this.targetDistance = dist(players[this.id].x, players[this.id].y, players[id].x, players[id].y);
+      }
+    }
+  }
+}
+
+Bot.prototype.update = function() {
+  this.findTarget();
+  this.move();
+}
+
+Bot.prototype.onLand = function() {
+  var d = dist(players[this.id].x, players[this.id].y, 0, 0);
+  if (d <= land.d / 2 - 40)
+    return true;
+  else
+    return false;
+}
+
+Bot.prototype.move = function() {
+  if (players[this.id] != null) {
+    var data = {
+      up: false,
+      down: false,
+      right: false,
+      left: false
+    };
+
+    if (this.onLand()) {
+      if (this.dirTime == 0) {
+        this.dir = floor(random(8));
+        this.dirTime = floor(random(20, 55));
+      }
+    }else{
+      if (players[this.id].x < 0 && players[this.id].y < 0) {
+        this.dir = 3;
+      } else if (players[this.id].x < 0 && players[this.id].y > 0) {
+        this.dir = 1;
+      } else if (players[this.id].x > 0 && players[this.id].y > 0) {
+        this.dir = 7;
+      } else if (players[this.id].x > 0 && players[this.id].y < 0) {
+        this.dir = 5;
+      }
+      this.dirTime = floor(random(5,55));
+    }
+
+    switch (this.dir) {
+      case 0:
+        data.up = true;
+        break;
+      case 1:
+        data.up = true;
+        data.right = true;
+        break;
+      case 2:
+        data.right = true;
+        break;
+      case 3:
+        data.down = true;
+        data.right = true;
+        break;
+      case 4:
+        data.down = true;
+        break;
+      case 5:
+        data.down = true;
+        data.left = true;
+        break;
+      case 6:
+        data.left = true;
+        break;
+      case 7:
+        data.up = true;
+        data.left = true;
+        break;
+    }
+    this.dirTime--;
+
+
+    if (this.target != null) {
+      var dx = players[this.target].x - players[this.id].x;
+      var dy = players[this.target].y - players[this.id].y;
+      data.angle = radians(atan2(dy, dx));
+    } else {
+      data.angle = random(-PI, PI);
+    }
+    socket.emit('move', data);
+    if (players[this.id].overload == 100 && players[this.id].alive == 1)
+      socket.emit('shoot');
+  }
 }

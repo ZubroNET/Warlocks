@@ -323,13 +323,6 @@ function mainLoop() {
   };
   bot.findTarget();
   bot.update();
-  if (keyIsDown(87)) data.up = true;
-  if (keyIsDown(83)) data.down = true;
-  if (keyIsDown(68)) data.right = true;
-  if (keyIsDown(65)) data.left = true;
-  if (data.up || data.down || data.right || data.left || data.hasOwnProperty('angle')) {
-    socket.emit('move', data);
-  }
   land.d -= 0.5;
 }
 
@@ -367,6 +360,8 @@ function Bot() {
   this.id = socket.id;
   this.target = null;
   this.targetDistance = null;
+  this.dir = null;
+  this.dirTime = 0;
 }
 
 Bot.prototype.findTarget = function() {
@@ -386,31 +381,70 @@ Bot.prototype.findTarget = function() {
 }
 
 Bot.prototype.update = function() {
-    if (players[this.id] != null) {
-      var data = {
-        up: false,
-        down: false,
-        right: false,
-        left: false
-      };
-      if(floor(random(0,2)))
-        data.up = true;
-      else
-        data.down = true;
-      if(floor(random(0,2)))
-        data.right = true;
-      else
-        data.left = true;
-
-      if (this.target != null) {
-        var dx = players[this.target].x - players[this.id].x;
-        var dy = players[this.target].y - players[this.id].y;
-        data.angle = radians(atan2(dy, dx));
-      } else {
-        data.angle = random(-PI, PI);
-      }
-      socket.emit('move', data);
-      if (players[this.id].overload == 100)
-        socket.emit('shoot');
+  if (players[this.id] != null) {
+    var data = {
+      up: false,
+      down: false,
+      right: false,
+      left: false
+    };
+    if(this.dirTime == 0){
+      this.dir = floor(random(8));
+      this.dirTime = floor(random(15,75));
     }
+
+    switch (this.dir) {
+      case 0:
+        data.up = true;
+        break;
+      case 1:
+        data.up = true;
+        data.right = true;
+        break;
+      case 2:
+        data.right = true;
+        break;
+      case 3:
+        data.down = true;
+        data.right = true;
+        break;
+      case 4:
+        data.down = true;
+        break;
+      case 5:
+        data.down = true;
+        data.left = true;
+        break;
+      case 6:
+        data.left = true;
+        break;
+      case 7:
+        data.up = true;
+        data.left = true;
+        break;
+    }
+    this.dirTime--;
+
+
+
+    // if (floor(random(0, 2)))
+    //   data.up = true;
+    // else
+    //   data.down = true;
+    // if (floor(random(0, 2)))
+    //   data.right = true;
+    // else
+    //   data.left = true;
+
+    if (this.target != null) {
+      var dx = players[this.target].x - players[this.id].x;
+      var dy = players[this.target].y - players[this.id].y;
+      data.angle = radians(atan2(dy, dx));
+    } else {
+      data.angle = random(-PI, PI);
+    }
+    socket.emit('move', data);
+    if (players[this.id].overload == 100)
+      socket.emit('shoot');
   }
+}
