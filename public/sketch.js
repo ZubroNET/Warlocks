@@ -264,6 +264,15 @@ function stopRKey(evt) {
 document.onkeypress = stopRKey;
 
 function showPlayer(player) {
+
+if(dist(player.x,player.y, 0,0) >  (land.d / 2) - player.r + 4){
+  noStroke();
+  fill(255, random(150,220), 0,150);
+  ellipse(player.x, player.y, player.r+50,player.r+50);
+}
+
+
+
   var color;
   // if (player.alive == 1){
   //   color = player.col;

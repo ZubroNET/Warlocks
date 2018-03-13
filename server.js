@@ -129,7 +129,7 @@ Player.prototype.update = function() {
     this.hp--;
   }
   if (this.overload < 100) {
-    this.overload += 1;
+    this.overload += 2;
   }
   if (this.hit) {
     this.onHit();
@@ -163,7 +163,7 @@ Bullet.prototype.collides = function() {
       var d = Math.sqrt(a * a + b * b);
 
       if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
-        players[id].hit = 40;
+        players[id].hit = 30;
         players[id].bulletAngle = this.angle;
         players[id].hp -=20;
         return true;
