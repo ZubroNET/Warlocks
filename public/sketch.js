@@ -264,8 +264,11 @@ function stopRKey(evt) {
 document.onkeypress = stopRKey;
 
 function showPlayer(player) {
-
+var inLava = false;
 if(dist(player.x,player.y, 0,0) >  (land.d / 2) - player.r + 4){
+  inLava = true;
+}
+if(inLava){
   noStroke();
   fill(255, random(150,220), 0,150);
   ellipse(player.x, player.y, player.r+50,player.r+50);
@@ -341,7 +344,10 @@ if(dist(player.x,player.y, 0,0) >  (land.d / 2) - player.r + 4){
   strokeWeight(3);
   stroke(53, 53, 77);
   rect(-player.r, player.r + 5, player.r * 2, 8);
-  fill(0, 255, 0);
+  if(inLava)
+    fill(255, 0, 0);
+  else
+    fill(0,255,0);
   rect(-player.r, player.r + 5, map(player.hp, 0, 100, 0, player.r * 2), 8);
   pop();
 
