@@ -150,6 +150,7 @@ function setup() {
     delete bullets[id];
   });
   socket.on('players', function(data) {
+
     for (var id in data.players) {
       players[id].px = players[id].x;
       players[id].py = players[id].y;
@@ -187,6 +188,18 @@ function setup() {
     //alert('Server is down');
     //window.location.replace("http://google.com");
   });
+  socket.on('nameAccepted', function(){
+    document.getElementById('defaultCanvas0').style.display = 'block';
+    document.getElementsByClassName('container')[0].style.display = 'none';
+    setInterval(function() {
+      mainLoop()
+    }, 1000 / 30);
+    bot = new Bot;
+  });
+
+  socket.on('nameRejected', function(error){
+    alert(error);
+  });
   textAlign(CENTER);
   translate(width / 2, height / 2);
 }
@@ -222,24 +235,11 @@ function draw() {
 
 }
 
-function setName(name) {
-  socket.emit('name', name);
-}
-
 function submitName() {
   var name = document.getElementById('name').value;
-  if (name.length > 2 && name.length < 15) {
-    document.getElementById('defaultCanvas0').style.display = 'block';
-    document.getElementsByClassName('container')[0].style.display = 'none';
-    socket.emit('createPlayer', name);
-    setInterval(function() {
-      mainLoop()
-    }, 1000 / 30);
-  } else {
-    alert("Minimum 3 characters, maximum 14 characters");
-  }
-  bot = new Bot;
+  socket.emit('createPlayer', name);
 }
+
 
 
 function windowResized() {

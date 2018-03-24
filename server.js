@@ -32,15 +32,21 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('createPlayer', function(name) {
-    if(!players.hasOwnProperty(socket.id)){
-      console.log("new player papi");
-      players[socket.id] = new Player(socket.id, name);
-      var playerInfo = {
-        id: socket.id,
-        col: players[socket.id].col,
-        name: players[socket.id].name
+    if (name.length > 2 && name.length < 11) {
+      socket.emit('nameAccepted');
+      if (!players.hasOwnProperty(socket.id)) {
+        console.log("new player papi");
+        players[socket.id] = new Player(socket.id, name);
+        var playerInfo = {
+          id: socket.id,
+          col: players[socket.id].col,
+          name: players[socket.id].name
+        }
+        io.sockets.emit('newPlayer', playerInfo);
       }
-      io.sockets.emit('newPlayer', playerInfo);
+    }else{
+      var error = "Minimum 3 characters, maximum 10 characters";
+      socket.emit('nameRejected', error)
     }
   });
 
@@ -165,7 +171,7 @@ Bullet.prototype.collides = function() {
       if (d < players[id].r + players[id].strokeWeight + this.strokeWeight) {
         players[id].hit = 30;
         players[id].bulletAngle = this.angle;
-        players[id].hp -=20;
+        players[id].hp -= 20;
         return true;
       }
     }
