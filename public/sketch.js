@@ -127,7 +127,7 @@ function setup() {
     }
   }
   land = new Land();
-  socket = io.connect('http://localhost:8080');
+  socket = io.connect('https://warlocks.zubro.net');
 
   socket.on('newPlayer', function(playerInfo) {
     players[playerInfo.id] = new Player(0, 0, playerInfo.id, playerInfo.col, playerInfo.name);
