@@ -2,11 +2,12 @@ var fps = 0;
 var players = {};
 var bullets = {};
 var land = new Land();
+const port = process.env.NODE_PORT || 3000;
 
 //server setup
 var express = require('express');
 var app = express();
-var server = app.listen(8080, listen);
+var server = app.listen(port, listen);
 
 function listen() {
   var host = server.address().address;
